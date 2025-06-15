@@ -2,6 +2,7 @@
 #include <iostream>
 
 
+
 void Sculptor::Sculptor(int _nx, int _ny, int _nz){
 
     this->nx = _nx;
@@ -147,5 +148,74 @@ void Sculptor:: cutEllipsoid(int xcenter, int ycenter, int zcenter, int rx, int 
     }
 }
 void Sculptor:: writeOFF(const char* filename){
-    
+    int NVoxels = 0, NVertices, NFaces;
+    float faces = 0;
+
+    ofstream fout;
+
+    fout.open(filename);
+    if (!fout.is_open()){
+       exit(1);
+       cout << "Não foi possivel gravar no arquivo";
+    }
+
+    fout << "OFF \n";
+
+    for(int i=0;i<nx;i++){
+        for(int j=0;j<ny;j++){
+            for(int k=0;k<nz;k++){
+                if (v[i][j][k].isOn == true){
+                    NVoxels++;
+                }
+            }
+        }
+    }
+
+    NVertices = 8*NVoxels;
+    NFaces = 6*NVoxels;
+
+    fout << NVertices << " " << NFaces << " " << 0 << endl;
+
+    // vertices do cubo sendo inseridos no aqruivo OFF
+    for(int i=0; i<nz; i++){
+        for(int j=0; j<ny; j++){
+            for(int k=0; k<nx; k++){
+                if(v[i][j][k].isOn){
+                    fout << i-0.5 << " " << j+0.5 << " " << k-0.5 << endl
+                         << i-0.5 << " " << j-0.5 << " " << k-0.5 << endl
+                         << i+0.5 << " " << j-0.5 << " " << k-0.5 << endl
+                         << i+0.5 << " " << j+0.5 << " " << k-0.5 << endl
+                         << i-0.5 << " " << j+0.5 << " " << k+0.5 << endl
+                         << i-0.5 << " " << j-0.5 << " " << k+0.5 << endl
+                         << i+0.5 << " " << j-0.5 << " " << k+0.5 << endl
+                         << i+0.5 << " " << j+0.5 << " " << k+0.5 << endl;
+                 }
+            }
+        }
+    }
+    // faces do cubo sendo inseridos no arquivo OFF
+    for(int i=0; i<nx; i++){
+        for(int j=0; j<ny; j++){
+            for(int k=0; k<nz; k++){
+                if(v[i][j][k].isOn){
+                    fout << 4 << " " << 0+faces << " " << 3+faces << " " << 2+faces << " " << 1+faces << " "
+                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl
+                         << 4 << " " << 4+faces << " " << 5+faces << " " << 6+faces << " " << 7+faces<< " "
+                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl
+                         << 4 << " " << 0+faces << " " << 1+faces << " " << 5+faces << " " << 4+faces << " "
+                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl
+                         << 4 << " " << 0+faces << " " << 4+faces << " " << 7+faces << " " << 3+faces << " "
+                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl
+                         << 4 << " " << 3+faces << " " << 7+faces << " " << 6+faces << " " << 2+faces << " "
+                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl
+                         << 4 << " " << 1+faces << " " << 2+faces << " " << 6+faces << " " << 5+faces<< " "
+                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl;
+                    faces = faces+8;
+
+                 }
+            }
+        }
+    }
+
+    fout.close();
 }
