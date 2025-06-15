@@ -14,7 +14,7 @@ void Sculptor::Sculptor(int _nx, int _ny, int _nz){
 
     // alocaçao dinamica da memoria para a matriz 3D de voxels
     v = new voxel **[_nx];
-    for(int i = 0 ; i <_nx, i++){
+    for(int i = 0 ; i <_nx; i++){
         v[i] = new voxel *[_ny];
         for(int j = 0; j < _ny; j++){
             v[i][j] = new voxel[_nz];
@@ -164,7 +164,7 @@ void Sculptor:: writeOFF(const char* filename){
     for(int i=0;i<nx;i++){
         for(int j=0;j<ny;j++){
             for(int k=0;k<nz;k++){
-                if (v[i][j][k].isOn == true){
+                if (v[i][j][k].show == true){
                     NVoxels++;
                 }
             }
@@ -180,7 +180,7 @@ void Sculptor:: writeOFF(const char* filename){
     for(int i=0; i<nz; i++){
         for(int j=0; j<ny; j++){
             for(int k=0; k<nx; k++){
-                if(v[i][j][k].isOn){
+                if(v[i][j][k].show){
                     fout << i-0.5 << " " << j+0.5 << " " << k-0.5 << endl
                          << i-0.5 << " " << j-0.5 << " " << k-0.5 << endl
                          << i+0.5 << " " << j-0.5 << " " << k-0.5 << endl
@@ -197,7 +197,7 @@ void Sculptor:: writeOFF(const char* filename){
     for(int i=0; i<nx; i++){
         for(int j=0; j<ny; j++){
             for(int k=0; k<nz; k++){
-                if(v[i][j][k].isOn){
+                if(v[i][j][k].show){
                     fout << 4 << " " << 0+faces << " " << 3+faces << " " << 2+faces << " " << 1+faces << " "
                          << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl
                          << 4 << " " << 4+faces << " " << 5+faces << " " << 6+faces << " " << 7+faces<< " "
