@@ -1,9 +1,10 @@
 #include "Sculptor.h"
 #include <iostream>
+#include <fstream>
+#include <iomanip>
 
 
-
-void Sculptor::Sculptor(int _nx, int _ny, int _nz){
+Sculptor::Sculptor(int _nx, int _ny, int _nz){
 
     this->nx = _nx;
     this->ny = _ny;
@@ -13,11 +14,11 @@ void Sculptor::Sculptor(int _nx, int _ny, int _nz){
     this->b = 0.0; // Blue color component
 
     // alocaçao dinamica da memoria para a matriz 3D de voxels
-    v = new voxel **[_nx];
-    for(int i = 0 ; i <_nx, i++){
-        v[i] = new voxel *[_ny];
+    v = new Voxel **[_nx];
+    for(int i = 0 ; i <_nx; i++){
+        v[i] = new Voxel *[_ny];
         for(int j = 0; j < _ny; j++){
-            v[i][j] = new voxel[_nz];
+            v[i][j] = new Voxel[_nz];
             for(int k = 0; k < _nz; k++){
                 this ->v[i][j][k].r = 0.0;
                 this ->v[i][j][k].g = 0.0;
@@ -29,7 +30,7 @@ void Sculptor::Sculptor(int _nx, int _ny, int _nz){
     }
 }
 // desalocando a memória alocada 
-void Sculptor::~Sculptor(){
+Sculptor::~Sculptor(){
     for(int i = 0; i < nx; i++){
         for(int j = 0; j < ny; j++){
             delete [] v[i][j]; // Libera a memória alocada para cada linha
@@ -49,10 +50,10 @@ void Sculptor::setColor(float r, float g, float b, float alpha){
  // cria um voxel nas posições x, y, z com as cores definidas no setColor
  void Sculptor::putVoxel(int x, int y, int z){
     this -> v[x][y][z].show = true;
-    this -> v[x][y][z].r = r-> r;
-    this -> v[x][y][z].g = g-> g;
-    this -> v[x][y][z].b = b-> b;
-    this -> v[x][y][z].a = a-> a;
+    this -> v[x][y][z].r = this-> r;
+    this -> v[x][y][z].g = this-> g;
+    this -> v[x][y][z].b = this-> b;
+    this -> v[x][y][z].a = this-> a;
 
 }
 void Sculptor::cutVoxel(int x, int y, int z){  
@@ -90,7 +91,7 @@ x0 = (x0 < 0) ? 0 : x0; // Garante que x0 não seja menor que 0
 
             for(int k = z0; k < z1; k++){
 
-                this -> cutBox(i, j, k);  // Chama a função cutVoxel para cada voxel dentro do box
+                this -> cutVoxel(i, j, k);  // Chama a função cutVoxel para cada voxel dentro do box
             }
         }
     }
@@ -118,9 +119,11 @@ void Sculptor:: putEllipsoid(int xcenter, int ycenter, int zcenter, int rx, int 
     for(int i =x0; i <x1; i++){
         for(int j = y0; j< y1; j++){
             for(int k = z0; k <z1; k++){
-
-                if(isInsideEllipsoid(i, j, k, xcenter, ycenter, zcenter, rx, ry, rz)){
-                    this -> putVoxel(i, j, k); // Chama a função putVoxel para cada voxel dentro do elipsoide
+                float dx = float(i - xcenter) / rx; // Normaliza a coordenada x
+                float dy = float(j - ycenter) / ry; // Normaliza a coordenada y
+                float dz = float(k - zcenter) / rz; // Normaliza a coordenada z
+                if((dx * dx + dy * dy + dz * dz) <= 1.0){ // Verifica se o ponto está dentro do elipsoide
+                    putVoxel(i, j, k); // Chama a função putVoxel para cada voxel dentro do elipsoide
                 }
             }
         }
@@ -139,80 +142,86 @@ void Sculptor:: cutEllipsoid(int xcenter, int ycenter, int zcenter, int rx, int 
     for(int i =x0; i <x1; i++){
         for(int j = y0; j< y1; j++){
             for(int k = z0; k <z1; k++){
-
-                if(isInsideEllipsoid(i, j, k, xcenter, ycenter, zcenter, rx, ry, rz)){
-                    this -> cutVoxel(i, j, k); // Chama a função cutVoxel para cada voxel dentro do elipsoide
+                 float dx = float(i - xcenter) / rx; // Normaliza a coordenada x
+                float dy = float(j - ycenter) / ry; // Normaliza a coordenada y
+                float dz = float(k - zcenter) / rz; // Normaliza a coordenada z
+                if((dx * dx + dy * dy + dz * dz) <= 1.0){ // Verifica se o ponto está dentro do elipsoide
+                    cutVoxel(i, j, k); // Chama a função putVoxel para cada voxel dentro do elipsoide
+                }
                 }
             }
         }
     }
-}
-void Sculptor:: writeOFF(const char* filename){
-    int NVoxels = 0, NVertices, NFaces;
-    float faces = 0;
 
-    ofstream fout;
+void Sculptor::writeOFF(const char* filename){
+    int NVoxels = 0;
+    int NVertices, NFaces;
+    int vertexIndex = 0;
 
+     std::ofstream fout;
+     
     fout.open(filename);
-    if (!fout.is_open()){
-       exit(1);
-       cout << "Não foi possivel gravar no arquivo";
+    if (!fout.is_open()) {
+        std::cerr << "Não foi possível abrir o arquivo.\n";
+        exit(1);
     }
 
-    fout << "OFF \n";
+    fout << "OFF\n";
 
-    for(int i=0;i<nx;i++){
-        for(int j=0;j<ny;j++){
-            for(int k=0;k<nz;k++){
-                if (v[i][j][k].isOn == true){
+    // Conta o número de voxels ativos
+    for(int i = 0; i < nx; i++){
+        for(int j = 0; j < ny; j++){
+            for(int k = 0; k < nz; k++){
+                if (v[i][j][k].show){
                     NVoxels++;
                 }
             }
         }
     }
 
-    NVertices = 8*NVoxels;
-    NFaces = 6*NVoxels;
+    NVertices = NVoxels * 8;
+    NFaces = NVoxels * 6;
 
-    fout << NVertices << " " << NFaces << " " << 0 << endl;
+    fout << NVertices << " " << NFaces << " 0\n";
 
-    // vertices do cubo sendo inseridos no aqruivo OFF
-    for(int i=0; i<nz; i++){
-        for(int j=0; j<ny; j++){
-            for(int k=0; k<nx; k++){
-                if(v[i][j][k].isOn){
-                    fout << i-0.5 << " " << j+0.5 << " " << k-0.5 << endl
-                         << i-0.5 << " " << j-0.5 << " " << k-0.5 << endl
-                         << i+0.5 << " " << j-0.5 << " " << k-0.5 << endl
-                         << i+0.5 << " " << j+0.5 << " " << k-0.5 << endl
-                         << i-0.5 << " " << j+0.5 << " " << k+0.5 << endl
-                         << i-0.5 << " " << j-0.5 << " " << k+0.5 << endl
-                         << i+0.5 << " " << j-0.5 << " " << k+0.5 << endl
-                         << i+0.5 << " " << j+0.5 << " " << k+0.5 << endl;
-                 }
+    // Escreve os vértices
+    for(int i = 0; i < nx; i++){
+        for(int j = 0; j < ny; j++){
+            for(int k = 0; k < nz; k++){
+                if (v[i][j][k].show){
+                    fout << i - 0.5 << " " << j + 0.5 << " " << k - 0.5 << "\n"
+                         << i - 0.5 << " " << j - 0.5 << " " << k - 0.5 << "\n"
+                         << i + 0.5 << " " << j - 0.5 << " " << k - 0.5 << "\n"
+                         << i + 0.5 << " " << j + 0.5 << " " << k - 0.5 << "\n"
+                         << i - 0.5 << " " << j + 0.5 << " " << k + 0.5 << "\n"
+                         << i - 0.5 << " " << j - 0.5 << " " << k + 0.5 << "\n"
+                         << i + 0.5 << " " << j - 0.5 << " " << k + 0.5 << "\n"
+                         << i + 0.5 << " " << j + 0.5 << " " << k + 0.5 << "\n";
+                }
             }
         }
     }
-    // faces do cubo sendo inseridos no arquivo OFF
-    for(int i=0; i<nx; i++){
-        for(int j=0; j<ny; j++){
-            for(int k=0; k<nz; k++){
-                if(v[i][j][k].isOn){
-                    fout << 4 << " " << 0+faces << " " << 3+faces << " " << 2+faces << " " << 1+faces << " "
-                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl
-                         << 4 << " " << 4+faces << " " << 5+faces << " " << 6+faces << " " << 7+faces<< " "
-                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl
-                         << 4 << " " << 0+faces << " " << 1+faces << " " << 5+faces << " " << 4+faces << " "
-                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl
-                         << 4 << " " << 0+faces << " " << 4+faces << " " << 7+faces << " " << 3+faces << " "
-                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl
-                         << 4 << " " << 3+faces << " " << 7+faces << " " << 6+faces << " " << 2+faces << " "
-                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl
-                         << 4 << " " << 1+faces << " " << 2+faces << " " << 6+faces << " " << 5+faces<< " "
-                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << endl;
-                    faces = faces+8;
 
-                 }
+    // Escreve as faces (com cor)
+    for(int i = 0; i < nx; i++){
+        for(int j = 0; j < ny; j++){
+            for(int k = 0; k < nz; k++){
+                if (v[i][j][k].show){
+                    fout << "4 " << vertexIndex+0 << " " << vertexIndex+3 << " " << vertexIndex+2 << " " << vertexIndex+1 << " "
+                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << "\n";
+                    fout << "4 " << vertexIndex+4 << " " << vertexIndex+5 << " " << vertexIndex+6 << " " << vertexIndex+7 << " "
+                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << "\n";
+                    fout << "4 " << vertexIndex+0 << " " << vertexIndex+1 << " " << vertexIndex+5 << " " << vertexIndex+4 << " "
+                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << "\n";
+                    fout << "4 " << vertexIndex+0 << " " << vertexIndex+4 << " " << vertexIndex+7 << " " << vertexIndex+3 << " "
+                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << "\n";
+                    fout << "4 " << vertexIndex+3 << " " << vertexIndex+7 << " " << vertexIndex+6 << " " << vertexIndex+2 << " "
+                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << "\n";
+                    fout << "4 " << vertexIndex+1 << " " << vertexIndex+2 << " " << vertexIndex+6 << " " << vertexIndex+5 << " "
+                         << v[i][j][k].r << " " << v[i][j][k].g << " " << v[i][j][k].b << " " << v[i][j][k].a << "\n";
+                    
+                    vertexIndex += 8;
+                }
             }
         }
     }
